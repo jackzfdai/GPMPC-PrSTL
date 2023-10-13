@@ -38,8 +38,6 @@ print(A)
 print(B)
 
 #Residual parameters:
-# train_g1 = A1*torch.sin(train_inputs[:,0]) + torch.randn(train_inputs[:,0].size()) * math.sqrt(Sigma_w)
-# train_g2 = A2*torch.sin(train_inputs[:,1]) + torch.randn(train_inputs[:,1].size()) * math.sqrt(Sigma_w)
 var_residual = 0.005
 K_residual = 0.05
 Bd = np.concatenate([1/2*(dt**2)*np.eye(2), dt*np.eye(2)], axis=0)
@@ -71,7 +69,7 @@ def solveMILP(plot, x0, v0):
     #Problem at time step k = 0 ____________________________________________
     m = gb.Model('integratorRobot2D')
 
-    #Cost function (zero objective since we want to test feasibility)
+    #Cost function (zero objective for debug testing feasibility)
     # zeroObjective = gb.LinExpr(0)
     # m.setObjective(zeroObjective)
 
@@ -167,11 +165,6 @@ def solveMILP(plot, x0, v0):
             qVarphi4_sol.append(qVarphi4_sol_i.X)
             pPhi1_sol_i = m.getVarByName("pPhi1[{:d}]".format(i))
             pPhi1_sol.append(pPhi1_sol_i.X)
-            # zLambda1_sol_i = m.getVarByName("zLambda1[{:d}]".format(i))
-            # zLambda1_sol.append(zLambda1_sol_i.X)
-            # zLambda2_sol_i = m.getVarByName("zLambda2[{:d}]".format(i))
-            # zLambda2_sol.append(zLambda2_sol_i.X)
-
 
         for i in range(N-1-(len(x0) - 1)):
             u1_sol_i = m.getVarByName("u[{:d},0]".format(i))
@@ -199,7 +192,6 @@ def plotTraj(x1_sol, x2_sol, x1_openloops = [], x2_openloops = []):
     plt.ylabel("y")
     plt.fill(goal_A_polygon_x1_plot, goal_A_polygon_x2_plot, 'g', alpha=0.5)
     plt.plot(goal_A_polygon_x1_plot + [goal_A_polygon_x1[0]], goal_A_polygon_x2_plot + [goal_A_polygon_x2[1]], 'g')
-    # plt.fill(goal_B_polygon_x1, goal_B_polygon_x2, 'g')
     plt.fill(obstacle_polygon_x1_plot, obstacle_polygon_x2_plot, 'r', alpha=0.5)
     plt.plot(obstacle_polygon_x1_plot + [obstacle_polygon_x1[0]], obstacle_polygon_x2_plot + [obstacle_polygon_x2[1]], 'r')
     plt.scatter(x1_sol[0], x2_sol[0], s=120, facecolors='none', edgecolors='black')
@@ -263,10 +255,6 @@ def runControlLoop(plot, x0, v0):
     print("Average runtime: ", avg_runtime)
     return avg_runtime, stl_met
 
-# x0 = np.array([[1., 1.]])
-# v0 = np.array([[0., 0.]])
-# runControlLoop(True, x0, v0)
-
 singleTest = True
 numTestIts = 100
 
@@ -274,8 +262,6 @@ if singleTest == True:
     numTestIts = 1
 
 currIt = 0
-# sigmax1Guess = np.zeros(N)
-# sigmax2Guess = np.zeros(N)
 
 feas_x0List = []
 infeas_x0List = []

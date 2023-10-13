@@ -7,10 +7,7 @@ from scipy.signal import cont2discrete
 import gurobipy as gb
 from gurobipy import GRB
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 from casadi import *
-
-from datetime import datetime
 
 np_rng = np.random.default_rng(seed=0)
 
@@ -24,11 +21,11 @@ plot_gp_training = False
 
 num_training_samples = 50
 
-train_x1 = torch.rand(num_training_samples) * 10 #torch.linspace(0, 10, 5)
-train_x2 = torch.rand(num_training_samples) * 10 #torch.linspace(0, 10, 5)
+train_x1 = torch.rand(num_training_samples) * 10 
+train_x2 = torch.rand(num_training_samples) * 10 
 train_x3 = torch.rand(num_training_samples) * 10 - 5
 train_x4 = torch.rand(num_training_samples) * 10 - 5
-train_u1 = torch.rand(num_training_samples) - 0.5 #torch.linspace(-1, 1, 5)
+train_u1 = torch.rand(num_training_samples) - 0.5 
 train_u2 = torch.rand(num_training_samples) - 0.5
 
 train_inputs = torch.stack([train_x1, train_x2, train_x3, train_x4, train_u1, train_u2], dim=0)
@@ -149,19 +146,13 @@ if plot_gp_training == True:
         # plt.show()
 
 KzzPrior1 = model_g1.covar_module(train_inputs).to_dense()
-print("_________1___________")
-print(KzzPrior1)
 dMu = torch.matmul(torch.linalg.inv(KzzPrior1 + model_g1.likelihood.noise.item()*torch.eye(KzzPrior1.size()[0])), train_g1) 
-print(dMu)
-print(dMu.size())
-# dSigma = torch.linalg.inv(KzzPrior1 + model_g1.covar_module.outputscale*torch.eye(KzzPrior1.size()[0]))
 dSigma = torch.linalg.inv(KzzPrior1 + model_g1.likelihood.noise.item()*torch.eye(KzzPrior1.size()[0]))
 
 KzzPrior2 = model_g2.covar_module(train_inputs).to_dense()
 dMu2 = torch.matmul(torch.linalg.inv(KzzPrior2 + model_g2.likelihood.noise.item()*torch.eye(KzzPrior2.size()[0])), train_g2) 
-# dSigma2 = torch.linalg.inv(KzzPrior2 + model_g2.covar_module.outputscale*torch.eye(KzzPrior2.size()[0]))
 dSigma2 = torch.linalg.inv(KzzPrior2 + model_g2.likelihood.noise.item()*torch.eye(KzzPrior2.size()[0]))
-print(dSigma2)
+# print(dSigma2)
 
 test_x1_new = torch.linspace(0, 10, 50)
 test_x2_new = torch.linspace(0, 10, 50)
@@ -171,125 +162,11 @@ test_u1_new = torch.linspace(-0.5, 0.5, 50)
 test_u2_new = torch.linspace(-0.5, 0.5, 50)
 test_inputs = torch.stack([test_x1_new, test_x2_new, test_x3_new, test_x4_new, test_u1_new, test_u2_new], dim=0)
 test_inputs = torch.transpose(test_inputs, dim0=0, dim1=1)
-# dMu_tile = dMu.tile((50, 1))
-# print(dMu_tile.size())
-# print(test_x1_new.size())
-# test_x1_mu = torch.matmul(dMu_tile, test_x1_new)
-# print(test_x1_mu)
+
 l = model_g1.covar_module.base_kernel.lengthscale
 sigma_1 = model_g1.covar_module.outputscale
 sigma_2 = model_g2.covar_module.outputscale
 l2 = model_g2.covar_module.base_kernel.lengthscale
-
-resultingMus = []
-
-#debug usage
-resultingMusTest = []
-for i in range(50):
-    test_row_i = torch.tile(test_inputs[i], (num_training_samples, 1))
-    norms = torch.linalg.norm(train_inputs - test_row_i, dim=1)
-    Kzz_row_i = sigma_1*torch.exp((-1.0/(2.0**(l**2)))*torch.square(norms))
-    resultingMu = torch.matmul(Kzz_row_i, dMu)
-    resultingMusTest.append(resultingMu.item())
-print("test")
-print(resultingMusTest)
-#end debug usage
-
-
-for i in range(50):
-    list_k = torch.tensor([])
-    for j in range(num_training_samples):
-        k_j = sigma_1*math.exp((-1/(2*(l**2)))*((test_x1_new[i] - train_x1[j])**2 + (test_x2_new[i]-train_x2[j])**2 + (test_u1_new[i] - train_u1[j])**2 + (test_u2_new[i] - train_u2[j])**2))
-        list_k = torch.cat((list_k, torch.tensor([k_j])), 0)
-    print(list_k)
-    resultingMu = torch.matmul(list_k, dMu)
-    resultingSigma = torch.tensor([sigma_1]) - torch.matmul(list_k, torch.matmul(dSigma, list_k))
-    print(resultingSigma)
-    print(resultingMu)
-    resultingMus.append(resultingMu.item())
-    print(resultingMus)
-
-diff = np.linalg.norm(observed_pred.mean.numpy() - np.asarray(resultingMus))
-print("diff is: ", diff)
-print(model_g1.likelihood.noise.item())
-print("original")
-print(observed_pred.mean.numpy() )
-print("manual")
-print(np.asarray(resultingMus))
-
-
-inputs_row_0 = torch.tile(train_inputs[0], (num_training_samples, 1))
-norms = torch.linalg.norm(train_inputs - inputs_row_0, dim=1)
-Kzz_row_0 = sigma_1*torch.exp((-1.0/(2.0**(l**2)))*torch.square(norms))
-# print("_________2___________")
-# print(Kzz_row_0)
-
-if plot_gp_training == True:
-    f1, ax1 = plt.subplots(1, 1, figsize=(4, 3))
-
-    # Plot predictive means as blue line
-    ax1.plot(train_inputs[:,0].numpy(), train_g1.numpy(), 'k*')
-    ax1.plot(train_inputs[:,0].numpy(), actual_g1.numpy(), 'k+')
-    ax1.plot(test_input[:,0].numpy(), resultingMus, 'b')
-    # Shade between the lower and upper confidence bounds
-    ax1.set_ylim([-0.3, 0.3])
-    ax1.legend(['Observed Data', 'Actual Function Sample','Mean', 'Confidence'])
-    plt.show()
-
-def calcGPMu_x1(x1, x2, u1, u2):
-    x1 = np.array(x1).item()
-    x2 = np.array(x1).item()
-    u1 = np.array(u1).item()
-    u2 = np.array(u2).item()
-
-    list_k = torch.tensor([])
-    for j in range(num_training_samples):
-        k_j = sigma_1*math.exp((-1/(2*(l**2)))*((torch.tensor([x1]) - train_x1[j])**2 + (torch.tensor([x2]) - train_x2[j])**2 + (torch.tensor([u1]) - train_u1[j])**2 + (torch.tensor([u2]) - train_u2[j])**2))
-        list_k = torch.cat((list_k, torch.tensor([k_j])), 0)
-    print(list_k)
-    resultingMu_x1 = torch.matmul(list_k, dMu)
-    # resultingSigma = torch.tensor([sigma_1]) - torch.matmul(list_k, torch.matmul(dSigma, list_k))
-    print(resultingMu_x1)
-    return resultingMu_x1.item()
-
-
-# def calcGPMu_x2(x1, x2, u1, u2):
-#     x1 = np.array(x1).item()
-#     x2 = np.array(x1).item()
-#     u1 = np.array(u1).item()
-#     u2 = np.array(u2).item()
-
-#     list_k = torch.tensor([])
-#     for j in range(num_training_samples):
-#         k_j = sigma_2*math.exp((-1/(2*(l**2)))*((torch.tensor([x1]) - train_x1[j])**2 + (torch.tensor([x2]) - train_x2[j])**2 + (torch.tensor([u1]) - train_u1[j])**2 + (torch.tensor([u2]) - train_u2[j])**2))
-#         list_k = torch.cat((list_k, torch.tensor([k_j])), 0)
-#     print(list_k)
-#     resultingMu_x2 = torch.matmul(list_k, dMu2)
-#     # resultingSigma = torch.tensor([sigma_1]) - torch.matmul(list_k, torch.matmul(dSigma, list_k))
-#     print(resultingMu_x2)
-#     return resultingMu_x2.item()
-
-def calcGPSigma_x1(x1, x2, x3, x4, u1, u2):
-    list_k = torch.tensor([])
-    for j in range(num_training_samples):
-        k_j = sigma_1*math.exp((-1/(2*(l**2)))*((x1 - train_x1[j])**2 + (x2 - train_x2[j])**2 + (x3 - train_x3[j])**2 + (x4 - train_x4[j])**2 + (u1 - train_u1[j])**2 + (u2 - train_u2[j])**2))
-        list_k = torch.cat((list_k, torch.tensor([k_j])), 0)
-    print(list_k)
-    # resultingMu_x1 = torch.matmul(list_k, dMu)
-    resultingSigma_x1 = torch.tensor([sigma_1]) - torch.matmul(list_k, torch.matmul(dSigma, list_k))
-    print(resultingSigma_x1)
-    return resultingSigma_x1
-
-# def calcGPSigma_x2(x1, x2, u1, u2):
-#     list_k = torch.tensor([])
-#     for j in range(num_training_samples):
-#         k_j = sigma_2*math.exp((-1/(2*(l**2)))*((x1 - train_x1[j])**2 + (x2 - train_x2[j])**2 + (u1 - train_u1[j])**2 + (u2 - train_u2[j])**2))
-#         list_k = torch.cat((list_k, torch.tensor([k_j])), 0)
-#     print(list_k)
-#     # resultingMu_x1 = torch.matmul(list_k, dMu)
-#     resultingSigma_x2 = torch.tensor([sigma_2]) - torch.matmul(list_k, torch.matmul(dSigma2, list_k))
-#     print(resultingSigma_x2)
-#     return resultingSigma_x2
 
 #Control parameters
 T = 3 #Time horizon
@@ -348,7 +225,7 @@ def solveMILP(plot, x0, v0):
     #Problem at time step k = 0 ____________________________________________
     m = gb.Model('integratorRobot2D')
 
-    #Cost function (zero objective since we want to test feasibility)
+    #Cost function (zero objective to debug test feasibility)
     # zeroObjective = gb.LinExpr(0)
     # m.setObjective(zeroObjective)
 
@@ -443,11 +320,6 @@ def solveMILP(plot, x0, v0):
             qVarphi4_sol.append(qVarphi4_sol_i.X)
             pPhi1_sol_i = m.getVarByName("pPhi1[{:d}]".format(i))
             pPhi1_sol.append(pPhi1_sol_i.X)
-            # zLambda1_sol_i = m.getVarByName("zLambda1[{:d}]".format(i))
-            # zLambda1_sol.append(zLambda1_sol_i.X)
-            # zLambda2_sol_i = m.getVarByName("zLambda2[{:d}]".format(i))
-            # zLambda2_sol.append(zLambda2_sol_i.X)
-
 
         for i in range(N-1-(len(x0) - 1)):
             u1_sol_i = m.getVarByName("u[{:d},0]".format(i))
@@ -479,22 +351,10 @@ def solveNLP(plot, x0, v0, sigma_x0, sigma_v0, u1_milp, u2_milp, qVarphi1_milp, 
                     dot(A[2, :], x) + dot(B[2, :], u) + Bd[2, 0]*(sigma_1.item()*exp((-1/(2*(l.item()**2)))*(sum2((repmat(horzcat(x[0], x[1], x[2], x[3], u[0], u[1]), num_training_samples, 1) - DM(train_inputs.detach().numpy()))**2).T)) @ DM(dMu.detach().numpy())),
                     dot(A[3, :], x) + dot(B[3, :], u) + Bd[3, 1]*(sigma_2.item()*exp((-1/(2*(l2.item()**2)))*(sum2((repmat(horzcat(x[0], x[1], x[2], x[3], u[0], u[1]), num_training_samples, 1) - DM(train_inputs.detach().numpy()))**2).T)) @ DM(dMu2.detach().numpy())))
 
-    # x_next = vertcat(dot(A[0, :], x) + dot(B[0, :], u) + Bd[0, 0]*K_residual*sin(x[0]) + Bd[0, 1]*K_residual*sin(x[1]),
-    #                 dot(A[1, :], x) + dot(B[1, :], u) + Bd[1, 0]*K_residual*sin(x[0]) + Bd[1, 1]*K_residual*sin(x[1]), 
-    #                 dot(A[2, :], x) + dot(B[2, :], u) + Bd[2, 0]*K_residual*sin(x[0]) + Bd[2, 1]*K_residual*sin(x[1]),
-    #                 dot(A[3, :], x) + dot(B[3, :], u) + Bd[3, 0]*K_residual*sin(x[0]) + Bd[3, 1]*K_residual*sin(x[1]))
-
     sigma_next = vertcat(dot(A[0, :], sigma) + Bd[0, 0]*(sigma_1.item() - (sigma_1.item()*exp((-1/(2*(l.item()**2)))*(sum2((repmat(horzcat(x[0], x[1], x[2], x[3], u[0], u[1]), num_training_samples, 1) - DM(train_inputs.detach().numpy()))**2).T))) @ DM(dSigma.detach().numpy()) @ (sigma_1.item()*exp((-1/(2*(l.item()**2)))*(sum2((repmat(horzcat(x[0], x[1], x[2], x[3], u[0], u[1]), num_training_samples, 1) - DM(train_inputs.detach().numpy()))**2).T))).T),
                          dot(A[1, :], sigma) + Bd[1, 1]*(sigma_2.item() - (sigma_2.item()*exp((-1/(2*(l2.item()**2)))*(sum2((repmat(horzcat(x[0], x[1], x[2], x[3], u[0], u[1]), num_training_samples, 1) - DM(train_inputs.detach().numpy()))**2).T))) @ DM(dSigma2.detach().numpy()) @ (sigma_2.item()*exp((-1/(2*(l.item()**2)))*(sum2((repmat(horzcat(x[0], x[1], x[2], x[3], u[0], u[1]), num_training_samples, 1) - DM(train_inputs.detach().numpy()))**2).T))).T),
                          dot(A[2, :], sigma) + Bd[2, 0]*(sigma_1.item() - (sigma_1.item()*exp((-1/(2*(l.item()**2)))*(sum2((repmat(horzcat(x[0], x[1], x[2], x[3], u[0], u[1]), num_training_samples, 1) - DM(train_inputs.detach().numpy()))**2).T))) @ DM(dSigma.detach().numpy()) @ (sigma_1.item()*exp((-1/(2*(l.item()**2)))*(sum2((repmat(horzcat(x[0], x[1], x[2], x[3], u[0], u[1]), num_training_samples, 1) - DM(train_inputs.detach().numpy()))**2).T))).T),
                          dot(A[3, :], sigma) + Bd[3, 1]*(sigma_2.item() - (sigma_2.item()*exp((-1/(2*(l2.item()**2)))*(sum2((repmat(horzcat(x[0], x[1], x[2], x[3], u[0], u[1]), num_training_samples, 1) - DM(train_inputs.detach().numpy()))**2).T))) @ DM(dSigma2.detach().numpy()) @ (sigma_2.item()*exp((-1/(2*(l.item()**2)))*(sum2((repmat(horzcat(x[0], x[1], x[2], x[3], u[0], u[1]), num_training_samples, 1) - DM(train_inputs.detach().numpy()))**2).T))).T))
-
-    # sigma_d = np.array([math.sqrt(var_residual), math.sqrt(var_residual)])
-
-    # sigma_next = vertcat(dot(A[0, :], sigma) + np.dot(Bd[0, :], sigma_d),
-    #                      dot(A[1, :], sigma) + np.dot(Bd[1, :], sigma_d),
-    #                      dot(A[2, :], sigma) + np.dot(Bd[2, :], sigma_d),
-    #                      dot(A[3, :], sigma) + np.dot(Bd[3, :], sigma_d))
 
     # Objective term
     L = u[0] ** 2 + u[1] ** 2
@@ -811,10 +671,6 @@ def runControlLoop(plot, x0, v0):
 
     return avg_runtime, stl_met
     
-# x0 = np.array([[1., 1.]])
-# v0 = np.array([[0., 0.]])
-# runControlLoop(True, x0, v0)
-
 singleTest = True
 numTestIts = 100
 
@@ -822,8 +678,6 @@ if singleTest == True:
     numTestIts = 1
 
 currIt = 0
-# sigmax1Guess = np.zeros(N)
-# sigmax2Guess = np.zeros(N)
 
 feas_x0List = []
 infeas_x0List = []

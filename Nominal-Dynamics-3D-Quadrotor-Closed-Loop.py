@@ -212,7 +212,7 @@ def solveMICP(plot, x0, v0):
     #Problem at time step k = 0 ____________________________________________
     m = gb.Model('quadrotor3DMICP')
 
-    #Cost function (zero objective since we want to test feasibility)
+    #Cost function (zero objective for debug testing feasibility)
     # zeroObjective = gb.LinExpr(0)
     # m.setObjective(zeroObjective)
 
@@ -254,14 +254,6 @@ def solveMICP(plot, x0, v0):
     qVarphi2 = m.addVars(N, vtype=GRB.BINARY, name="qVarphi2")
     qVarphi3 = m.addVars(N, vtype=GRB.BINARY, name="qVarphi3")
     qVarphi4 = m.addVars(N, vtype=GRB.BINARY, name="qVarphi4")
-    # qVarphi5 = m.addVars(N, vtype=GRB.BINARY, name="qVarphi5")
-    # qVarphi6 = m.addVars(N, vtype=GRB.BINARY, name="qVarphi6")
-    # pPhi1 = m.addVars(N, vtype=GRB.BINARY, name="pPhi1")
-    # pPhi2 = m.addVars(N, vtype=GRB.BINARY, name="pPhi2")
-
-
-    # pPhi1_sum = gb.LinExpr()
-    # pPhi2_sum = gb.LinExpr()
 
     for i in range(0, N):
         # Avoid predicates
@@ -269,35 +261,9 @@ def solveMICP(plot, x0, v0):
         m.addConstr(0 <= M*(1 - qVarphi2[i]) - epsilon + (x[i, 0] - obstacle_polygon_x1[1]))
         m.addConstr(0 <= M*(1 - qVarphi3[i]) - epsilon + (obstacle_polygon_x2[0] - x[i, 1]))
         m.addConstr(0 <= M*(1 - qVarphi4[i]) - epsilon + (x[i, 1] - obstacle_polygon_x2[1]))
-        # m.addConstr(0 <= M*(1 - qVarphi5[i]) - epsilon + (obstacle_polygon_x3[0] - x[i, 2]))
-        # m.addConstr(0 <= M*(1 - qVarphi6[i]) - epsilon + (x[i, 2] - obstacle_polygon_x3[1]))
 
         #Avoid disjunctions
-        m.addConstr(1 <= qVarphi1[i] + qVarphi2[i] + qVarphi3[i] + qVarphi4[i]) # + qVarphi5[i] + qVarphi6[i])
-
-        # #Reach predicates
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (x[i, 0] - goal_A_polygon_x1[0]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (- x[i, 0] + goal_A_polygon_x1[1]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (x[i, 1] - goal_A_polygon_x2[0]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (- x[i, 1] + goal_A_polygon_x2[1]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (x[i, 2] - goal_A_polygon_x3[0]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (- x[i, 2] + goal_A_polygon_x3[1]))
-
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (x[i, 0] - goal_B_polygon_x1[0]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (- x[i, 0] + goal_B_polygon_x1[1]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (x[i, 1] - goal_B_polygon_x2[0]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (- x[i, 1] + goal_B_polygon_x2[1]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (x[i, 2] - goal_B_polygon_x3[0]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (- x[i, 2] + goal_B_polygon_x3[1]))
-
-        # #pPhi1_sum
-        # pPhi1_sum.add(pPhi1[i])
-
-        # #pPhi2_sum
-        # pPhi2_sum.add(pPhi2[i])
-    
-    # m.addConstr(1 <= pPhi1_sum)
-    # m.addConstr(1 <= pPhi2_sum)
+        m.addConstr(1 <= qVarphi1[i] + qVarphi2[i] + qVarphi3[i] + qVarphi4[i]) 
 
     for i in range(0, N-surveillance_A_period+1):
         pPhi1_i = m.addVars(surveillance_A_period, vtype=GRB.BINARY, name="pPhi1_{:d}".format(i))
@@ -346,8 +312,6 @@ def solveMICP(plot, x0, v0):
     qVarphi2_sol = []
     qVarphi3_sol = []
     qVarphi4_sol = []
-    # qVarphi5_sol = []
-    # qVarphi6_sol = []
     pPhi1_sol = []
     pPhi2_sol = []
 
@@ -425,7 +389,7 @@ def solveCP(plot, x0, v0, qVarphi1, qVarphi2, qVarphi3, qVarphi4, pPhi1, pPhi2):
     #Problem at time step k = 0 ____________________________________________
     m = gb.Model('quadrotor3DCP')
 
-    #Cost function (zero objective since we want to test feasibility)
+    #Cost function (zero objective for debug testing feasibility)
     # zeroObjective = gb.LinExpr(0)
     # m.setObjective(zeroObjective)
 
@@ -462,19 +426,6 @@ def solveCP(plot, x0, v0, qVarphi1, qVarphi2, qVarphi3, qVarphi4, pPhi1, pPhi2):
         m.addConstr(v[i+1, 0] == A[3, 0]*x[i, 0] + A[3, 1]*x[i, 1] + A[3, 2]*x[i, 2] + A[3, 3]*v[i, 0] + A[3, 4]*v[i, 1] + A[3, 5]*v[i, 2] + B[3, 0]*theta[i-(len(x0) - 1)] + B[3, 1]*phi[i-(len(x0) - 1)] + B[3, 2]*thrust[i-(len(x0) - 1)])
         m.addConstr(v[i+1, 1] == A[4, 0]*x[i, 0] + A[4, 1]*x[i, 1] + A[4, 2]*x[i, 2] + A[4, 3]*v[i, 0] + A[4, 4]*v[i, 1] + A[4, 5]*v[i, 2] + B[4, 0]*theta[i-(len(x0) - 1)] + B[4, 1]*phi[i-(len(x0) - 1)] + B[4, 2]*thrust[i-(len(x0) - 1)])
         m.addConstr(v[i+1, 2] == A[5, 0]*x[i, 0] + A[5, 1]*x[i, 1] + A[5, 2]*x[i, 2] + A[5, 3]*v[i, 0] + A[5, 4]*v[i, 1] + A[5, 5]*v[i, 2] + B[5, 0]*theta[i-(len(x0) - 1)] + B[5, 1]*phi[i-(len(x0) - 1)] + B[5, 2]*thrust[i-(len(x0) - 1)])
-        
-    # qVarphi1 = m.addVars(N, vtype=GRB.BINARY, name="qVarphi1")
-    # qVarphi2 = m.addVars(N, vtype=GRB.BINARY, name="qVarphi2")
-    # qVarphi3 = m.addVars(N, vtype=GRB.BINARY, name="qVarphi3")
-    # qVarphi4 = m.addVars(N, vtype=GRB.BINARY, name="qVarphi4")
-    # qVarphi5 = m.addVars(N, vtype=GRB.BINARY, name="qVarphi5")
-    # qVarphi6 = m.addVars(N, vtype=GRB.BINARY, name="qVarphi6")
-    # pPhi1 = m.addVars(N, vtype=GRB.BINARY, name="pPhi1")
-    # pPhi2 = m.addVars(N, vtype=GRB.BINARY, name="pPhi2")
-
-
-    # pPhi1_sum = gb.LinExpr()
-    # pPhi2_sum = gb.LinExpr()
 
     for i in range(len(x0), N):
         # Avoid predicates
@@ -482,39 +433,9 @@ def solveCP(plot, x0, v0, qVarphi1, qVarphi2, qVarphi3, qVarphi4, pPhi1, pPhi2):
         m.addConstr(0 <= M*(1 - qVarphi2[i]) - epsilon + (x[i, 0] - obstacle_polygon_x1[1]))
         m.addConstr(0 <= M*(1 - qVarphi3[i]) - epsilon + (obstacle_polygon_x2[0] - x[i, 1]))
         m.addConstr(0 <= M*(1 - qVarphi4[i]) - epsilon + (x[i, 1] - obstacle_polygon_x2[1]))
-        # m.addConstr(0 <= M*(1 - qVarphi5[i]) - epsilon + (obstacle_polygon_x3[0] - x[i, 2]))
-        # m.addConstr(0 <= M*(1 - qVarphi6[i]) - epsilon + (x[i, 2] - obstacle_polygon_x3[1]))
-
-        #Avoid disjunctions
-        # m.addConstr(1 <= qVarphi1[i] + qVarphi2[i] + qVarphi3[i] + qVarphi4[i]) # + qVarphi5[i] + qVarphi6[i])
-
-        # #Reach predicates
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (x[i, 0] - goal_A_polygon_x1[0]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (- x[i, 0] + goal_A_polygon_x1[1]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (x[i, 1] - goal_A_polygon_x2[0]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (- x[i, 1] + goal_A_polygon_x2[1]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (x[i, 2] - goal_A_polygon_x3[0]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (- x[i, 2] + goal_A_polygon_x3[1]))
-
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (x[i, 0] - goal_B_polygon_x1[0]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (- x[i, 0] + goal_B_polygon_x1[1]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (x[i, 1] - goal_B_polygon_x2[0]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (- x[i, 1] + goal_B_polygon_x2[1]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (x[i, 2] - goal_B_polygon_x3[0]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (- x[i, 2] + goal_B_polygon_x3[1]))
-
-        # #pPhi1_sum
-        # pPhi1_sum.add(pPhi1[i])
-
-        # #pPhi2_sum
-        # pPhi2_sum.add(pPhi2[i])
-    
-    # m.addConstr(1 <= pPhi1_sum)
-    # m.addConstr(1 <= pPhi2_sum)
 
     for i in range(0, N-surveillance_A_period+1):
-        pPhi1_i = pPhi1[i] #m.addVars(surveillance_A_period, vtype=GRB.BINARY, name="pPhi1_{:d}".format(i))
-        # pPhi1_i_sum = gb.LinExpr()
+        pPhi1_i = pPhi1[i] 
 
         for j in range (surveillance_A_period):
             if (i + j >= len(x0)):
@@ -525,13 +446,8 @@ def solveCP(plot, x0, v0, qVarphi1, qVarphi2, qVarphi3, qVarphi4, pPhi1, pPhi2):
                 m.addConstr(0 <= M*(1 - pPhi1_i[j]) - epsilon + (x[i+j, 2] - goal_A_polygon_x3[0]))
                 m.addConstr(0 <= M*(1 - pPhi1_i[j]) - epsilon + (- x[i+j, 2] + goal_A_polygon_x3[1]))
 
-            # pPhi1_i_sum.add(pPhi1_i[j])
-
-        # m.addConstr(1 <= pPhi1_i_sum)
-
     for i in range(0, N-surveillance_B_period+1):
-        pPhi2_i = pPhi2[i] #m.addVars(surveillance_B_period, vtype=GRB.BINARY, name="pPhi2_{:d}".format(i))
-        # pPhi2_i_sum = gb.LinExpr()
+        pPhi2_i = pPhi2[i] 
 
         for j in range (surveillance_B_period):
             if (i + j >= len(x0)):         
@@ -542,11 +458,6 @@ def solveCP(plot, x0, v0, qVarphi1, qVarphi2, qVarphi3, qVarphi4, pPhi1, pPhi2):
                 m.addConstr(0 <= M*(1 - pPhi2_i[j]) - epsilon + (x[i+j, 2] - goal_B_polygon_x3[0]))
                 m.addConstr(0 <= M*(1 - pPhi2_i[j]) - epsilon + (- x[i+j, 2] + goal_B_polygon_x3[1]))
 
-            # pPhi2_i_sum.add(pPhi2_i[j])
-
-        # m.addConstr(1 <= pPhi2_i_sum)
-
-    # m.setParam("BarHomogenous", 1)
     m.optimize()
     m.printStats()
     m.printQuality()
@@ -560,14 +471,7 @@ def solveCP(plot, x0, v0, qVarphi1, qVarphi2, qVarphi3, qVarphi4, pPhi1, pPhi2):
     theta_sol = []
     phi_sol = []
     thrust_sol = []
-    # qVarphi1_sol = []
-    # qVarphi2_sol = []
-    # qVarphi3_sol = []
-    # qVarphi4_sol = []
-    # qVarphi5_sol = []
-    # qVarphi6_sol = []
-    # pPhi1_sol = []
-    # pPhi2_sol = []
+
     solver_runtime = m.getAttr('Runtime')
     solver_status = m.getAttr('Status')
     feasible = False
@@ -592,33 +496,6 @@ def solveCP(plot, x0, v0, qVarphi1, qVarphi2, qVarphi3, qVarphi4, pPhi1, pPhi2):
             v1_sol.append(v1_sol_i.X)
             v2_sol.append(v2_sol_i.X)
             v3_sol.append(v3_sol_i.X)
-
-            # qVarphi1_sol_i = m.getVarByName("qVarphi1[{:d}]".format(i))
-            # qVarphi1_sol.append(qVarphi1_sol_i.X)
-            # qVarphi2_sol_i = m.getVarByName("qVarphi2[{:d}]".format(i))
-            # qVarphi2_sol.append(qVarphi2_sol_i.X) 
-            # qVarphi3_sol_i = m.getVarByName("qVarphi3[{:d}]".format(i))
-            # qVarphi3_sol.append(qVarphi3_sol_i.X)
-            # qVarphi4_sol_i = m.getVarByName("qVarphi4[{:d}]".format(i))
-            # qVarphi4_sol.append(qVarphi4_sol_i.X)
-            # qVarphi5_sol_i = m.getVarByName("qVarphi5[{:d}]".format(i))
-            # qVarphi5_sol.append(qVarphi5_sol_i.X)
-            # qVarphi6_sol_i = m.getVarByName("qVarphi6[{:d}]".format(i))
-            # qVarphi6_sol.append(qVarphi6_sol_i.X)
-            
-        # for i in range(N-surveillance_A_period+1):
-        #     pPhi1_sol_i = [] 
-        #     for j in range(surveillance_A_period):
-        #         pPhi1_sol_i_j = m.getVarByName("pPhi1_{:d}[{:d}]".format(i, j))
-        #         pPhi1_sol_i.append(pPhi1_sol_i_j.X)
-        #     pPhi1_sol.append(pPhi1_sol_i)
-        
-        # for i in range(N-surveillance_B_period+1):
-        #     pPhi2_sol_i = [] 
-        #     for j in range(surveillance_B_period):
-        #         pPhi2_sol_i_j = m.getVarByName("pPhi2_{:d}[{:d}]".format(i, j))
-        #         pPhi2_sol_i.append(pPhi2_sol_i_j.X)
-        #     pPhi2_sol.append(pPhi2_sol_i)
 
         for i in range(N-1-(len(x0) - 1)):
             theta_sol_i = m.getVarByName("theta[{:d}]".format(i))
@@ -652,14 +529,6 @@ def verifySTLSAT(x, v):
     qVarphi2 = m_sat.addVars(N, vtype=GRB.BINARY, name="qVarphi2")
     qVarphi3 = m_sat.addVars(N, vtype=GRB.BINARY, name="qVarphi3")
     qVarphi4 = m_sat.addVars(N, vtype=GRB.BINARY, name="qVarphi4")
-    # qVarphi5 = m.addVars(N, vtype=GRB.BINARY, name="qVarphi5")
-    # qVarphi6 = m.addVars(N, vtype=GRB.BINARY, name="qVarphi6")
-    # pPhi1 = m.addVars(N, vtype=GRB.BINARY, name="pPhi1")
-    # pPhi2 = m.addVars(N, vtype=GRB.BINARY, name="pPhi2")
-
-
-    # pPhi1_sum = gb.LinExpr()
-    # pPhi2_sum = gb.LinExpr()
 
     for i in range(0, N):
         # Avoid predicates
@@ -667,35 +536,9 @@ def verifySTLSAT(x, v):
         m_sat.addConstr(0 <= M*(1 - qVarphi2[i]) - epsilon + (x[i, 0] - obstacle_polygon_x1[1]))
         m_sat.addConstr(0 <= M*(1 - qVarphi3[i]) - epsilon + (obstacle_polygon_x2[0] - x[i, 1]))
         m_sat.addConstr(0 <= M*(1 - qVarphi4[i]) - epsilon + (x[i, 1] - obstacle_polygon_x2[1]))
-        # m.addConstr(0 <= M*(1 - qVarphi5[i]) - epsilon + (obstacle_polygon_x3[0] - x[i, 2]))
-        # m.addConstr(0 <= M*(1 - qVarphi6[i]) - epsilon + (x[i, 2] - obstacle_polygon_x3[1]))
 
         #Avoid disjunctions
         m_sat.addConstr(1 <= qVarphi1[i] + qVarphi2[i] + qVarphi3[i] + qVarphi4[i]) # + qVarphi5[i] + qVarphi6[i])
-
-        # #Reach predicates
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (x[i, 0] - goal_A_polygon_x1[0]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (- x[i, 0] + goal_A_polygon_x1[1]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (x[i, 1] - goal_A_polygon_x2[0]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (- x[i, 1] + goal_A_polygon_x2[1]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (x[i, 2] - goal_A_polygon_x3[0]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (- x[i, 2] + goal_A_polygon_x3[1]))
-
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (x[i, 0] - goal_B_polygon_x1[0]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (- x[i, 0] + goal_B_polygon_x1[1]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (x[i, 1] - goal_B_polygon_x2[0]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (- x[i, 1] + goal_B_polygon_x2[1]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (x[i, 2] - goal_B_polygon_x3[0]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (- x[i, 2] + goal_B_polygon_x3[1]))
-
-        # #pPhi1_sum
-        # pPhi1_sum.add(pPhi1[i])
-
-        # #pPhi2_sum
-        # pPhi2_sum.add(pPhi2[i])
-    
-    # m.addConstr(1 <= pPhi1_sum)
-    # m.addConstr(1 <= pPhi2_sum)
 
     for i in range(0, N-surveillance_A_period+1):
         pPhi1_i = m_sat.addVars(surveillance_A_period, vtype=GRB.BINARY, name="pPhi1_{:d}".format(i))
@@ -735,8 +578,6 @@ def verifySTLSAT(x, v):
     qVarphi2_sol = []
     qVarphi3_sol = []
     qVarphi4_sol = []
-    # qVarphi5_sol = []
-    # qVarphi6_sol = []
     pPhi1_sol = []
     pPhi2_sol = []
 
@@ -759,10 +600,6 @@ def verifySTLSAT(x, v):
             qVarphi3_sol.append(qVarphi3_sol_i.X)
             qVarphi4_sol_i = m_sat.getVarByName("qVarphi4[{:d}]".format(i))
             qVarphi4_sol.append(qVarphi4_sol_i.X)
-            # qVarphi5_sol_i = m.getVarByName("qVarphi5[{:d}]".format(i))
-            # qVarphi5_sol.append(qVarphi5_sol_i.X)
-            # qVarphi6_sol_i = m.getVarByName("qVarphi6[{:d}]".format(i))
-            # qVarphi6_sol.append(qVarphi6_sol_i.X)
             
         for i in range(N-surveillance_A_period+1):
             pPhi1_sol_i = [] 
@@ -852,27 +689,18 @@ def runControlLoop(plot, x0, v0):
     
     return satSTL, isFeasible, avg_runtime 
 
-# x0 = np.array([[5., 2., 1.]])
-# v0 = np.array([[0., 0., 0.]])
-
-# runControlLoop(True, x0, v0)
-
-# plt.show()
-
-singleTest = False
-numTestIts = 10
+singleTest = True
+numTestIts = 100
 
 if singleTest == True:
     numTestIts = 1
 
 currIt = 0
-# sigmax1Guess = np.zeros(N)
-# sigmax2Guess = np.zeros(N)
 
 sat_x0List = []
 unsat_x0List = []
 infeas_list = []
-numNLPInfeas = 0
+numCPInfeas = 0
 
 for i in range(numTestIts):
     currIt += 1
@@ -885,20 +713,20 @@ for i in range(numTestIts):
         x0_i = np.array([x0_i])
     
     v0_i = np.array([[0., 0., 0.]])
-    satisfiedSTL, NLPFeasOnTermination, avg_runtime = runControlLoop(singleTest, x0_i, v0_i)
+    satisfiedSTL, CPFeasOnTermination, avg_runtime = runControlLoop(singleTest, x0_i, v0_i)
     if satisfiedSTL:
         sat_x0List.append(x0_i)
     else:
         unsat_x0List.append(x0_i)
 
-    if NLPFeasOnTermination == False:
-        numNLPInfeas += 1
+    if CPFeasOnTermination == False:
+        numCPInfeas += 1
         infeas_list.append(x0_i)
 
     plt.show()
     
 print("Total sat: ", len(sat_x0List))
 print("Total unsat: ", len(unsat_x0List))
-print("Total unsat due to infeas: ", str(numNLPInfeas))
+print("Total unsat due to infeasibility of controller: ", str(numCPInfeas))
 print("Unsat list: ", unsat_x0List)
 print("Infeas list: ", infeas_list)

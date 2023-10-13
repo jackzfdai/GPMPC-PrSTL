@@ -7,11 +7,7 @@ from scipy.signal import cont2discrete
 import gurobipy as gb
 from gurobipy import GRB
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.animation as animation
-from matplotlib import cm
 from casadi import *
-from datetime import datetime
 
 #wind params
 K_vent = 0.5
@@ -28,18 +24,8 @@ training_iter = 500
 train_x1 = torch.rand(num_training_samples) * 7 
 train_x2 = torch.rand(num_training_samples) * 7 
 train_x3 = torch.rand(num_training_samples) * 7
-# train_v1 = torch.rand(num_training_samples) * 4 - 2
-# train_v2 = torch.rand(num_training_samples) * 4 - 2
-# train_v3 = torch.rand(num_training_samples) * 4 - 2
-# train_r = torch.rand(num_training_samples) * 2 - 1 
-# train_dr = torch.rand(num_training_samples) * 2 - 1
-# train_w = torch.rand(num_training_samples) * 2 - 1 
-# train_dw = torch.rand(num_training_samples) * 2 - 1
-# train_uf = torch.rand(num_training_samples) * 14.48 - 7.24
-# train_ux = torch.rand(num_training_samples) * 7.24 - 3.62
-# train_uy = torch.rand(num_training_samples) * 7.24 - 3.62
 
-train_inputs = torch.stack([train_x1, train_x2, train_x3], dim=0) #, train_v1, train_v2, train_v3, train_r, train_dr, train_w, train_dw, train_uf, train_ux, train_uy], dim=0)
+train_inputs = torch.stack([train_x1, train_x2, train_x3], dim=0) 
 train_inputs = torch.transpose(train_inputs, dim0=0, dim1=1)
 
 train_g_v1 = K_vent/(torch.square(train_inputs[:, 0]) + torch.square(train_inputs[:, 2] - 7)) * (train_inputs[:, 0])/torch.sqrt(torch.square(train_inputs[:, 0]) + torch.square(train_inputs[:, 2] - 7)) + torch.randn(num_training_samples) * math.sqrt(var_vent) 
@@ -152,17 +138,7 @@ with torch.no_grad(), gpytorch.settings.fast_pred_var():
     test_x1 = torch.linspace(0, 7, 50)
     test_x2 = torch.linspace(0, 7, 50)
     test_x3 = torch.linspace(0, 7, 50)
-    # test_v1 = torch.linspace(-1.5, 1.5, 50)
-    # test_v2 = torch.linspace(-1.5, 1.5, 50)
-    # test_v3 = torch.linspace(-1.5, 1.5, 50)
-    # test_r = torch.linspace(-1, 1, 50)
-    # test_dr = torch.linspace(-1, 1, 50)
-    # test_w = torch.linspace(-1, 1, 50)
-    # test_dw = torch.linspace(-1, 1, 50)
-    # test_uf = torch.linspace(-4.545, 9.935, 50)
-    # test_ux = torch.linspace(-3.62, 3.62, 50)
-    # test_uy = torch.linspace(3.62, 3.62, 50)
-    test_input = torch.stack([test_x1, test_x2, test_x3], dim=0) #, test_v1, test_v2, test_v3, test_r, test_dr, test_w, test_dw, test_uf, test_ux, test_uy], dim=0)
+    test_input = torch.stack([test_x1, test_x2, test_x3], dim=0) 
     test_input = torch.transpose(test_input, dim0=0, dim1=1)
     observed_pred = likelihood_g_v1(model_g_v1(test_input))
     observed_pred_v2 = likelihood_g_v2(model_g_v2(test_input))
@@ -197,21 +173,15 @@ if plot_gp_training == True:
 
 KzzPrior_v1 = model_g_v1.covar_module(train_inputs).to_dense()
 dMu_v1 = torch.matmul(torch.linalg.inv(KzzPrior_v1 + model_g_v1.likelihood.noise.item()*torch.eye(KzzPrior_v1.size()[0])), train_g_v1) 
-# print(dMu)
-# print(dMu.size())
 dSigma_v1 = torch.linalg.inv(KzzPrior_v1 + model_g_v1.likelihood.noise.item()*torch.eye(KzzPrior_v1.size()[0]))
 
 KzzPrior_v2 = model_g_v2.covar_module(train_inputs).to_dense()
 dMu_v2 = torch.matmul(torch.linalg.inv(KzzPrior_v2 + model_g_v2.likelihood.noise.item()*torch.eye(KzzPrior_v2.size()[0])), train_g_v2) 
-# dSigma2 = torch.linalg.inv(KzzPrior2 + model_g2.covar_module.outputscale*torch.eye(KzzPrior2.size()[0]))
 dSigma_v2 = torch.linalg.inv(KzzPrior_v2 + model_g_v2.likelihood.noise.item()*torch.eye(KzzPrior_v2.size()[0]))
-# print(dSigma2)
 
 KzzPrior_v3 = model_g_v3.covar_module(train_inputs).to_dense()
 dMu_v3 = torch.matmul(torch.linalg.inv(KzzPrior_v3 + model_g_v3.likelihood.noise.item()*torch.eye(KzzPrior_v3.size()[0])), train_g_v3) 
-# dSigma2 = torch.linalg.inv(KzzPrior2 + model_g2.covar_module.outputscale*torch.eye(KzzPrior2.size()[0]))
 dSigma_v3 = torch.linalg.inv(KzzPrior_v3 + model_g_v3.likelihood.noise.item()*torch.eye(KzzPrior_v3.size()[0]))
-# print(dSigma2)
 
 l_v1 = model_g_v1.covar_module.base_kernel.lengthscale
 sigma_v1 = model_g_v1.covar_module.outputscale
@@ -231,9 +201,9 @@ dt = 0.2
 N = int(T/dt) # Control intervals 
 surveillance_A_period = int(surveillance_A_period_t/dt)
 surveillance_B_period = int(surveillance_B_period_t/dt)
-epsilon = 0.0
+epsilon = 0.0 #this is a robustness epsilon (unused by setting to 0)
 invCDFVarphiEpsilon_hi = norm.ppf(0.01) #satisfy probabilistic predicates by 1-p (enter p in norm.ppf())
-invCDFVarphiEpsilon_lo = norm.ppf(0.2)
+invCDFVarphiEpsilon_lo = norm.ppf(0.2) #lower satisfaction probability used for constraints on state at time steps further away
 invCDFV = norm.ppf(0.25)
 M = N
 
@@ -261,7 +231,6 @@ print(A)
 print(B)
 
 Bd = np.concatenate([dt*np.eye(3), np.eye(3)], axis=0)
-# Bd = np.zeros((10, 3))
 
 #cost function params
 R = np.array([[1/4, 0, 0], [0, 1/2, 0], [0, 0, 1/2]])
@@ -286,7 +255,7 @@ minThrust = -maxThrust
 lbu = [minAng, minAng, minThrust]
 ubu = [maxAng, maxAng, maxThrust]
 
-x_lb = lbx[0] #Split into x1, x2 if needed later 
+x_lb = lbx[0]  
 x_ub = ubx[0]
 v_lb = lbx[3]
 v_ub = ubx[3]
@@ -422,7 +391,7 @@ def solveMICP(plot, x0, v0):
     #Problem at time step k = 0 ____________________________________________
     m = gb.Model('integratorRobot2D')
 
-    #Cost function (zero objective since we want to test feasibility)
+    #Cost function (zero objective to debug test feasibility)
     # zeroObjective = gb.LinExpr(0)
     # m.setObjective(zeroObjective)
 
@@ -444,7 +413,7 @@ def solveMICP(plot, x0, v0):
     objective = gb.QuadExpr()
     zero_objective = gb.LinExpr(0)
     for i in range(N-1-(len(x0) - 1)):
-        objective_i = gb.QuadExpr(R_theta*(theta[i]**2) + R_phi*(phi[i]**2) + R_thrust*(thrust[i]**2)) #gb.QuadExpr(thrust[i]**2)
+        objective_i = gb.QuadExpr(R_theta*(theta[i]**2) + R_phi*(phi[i]**2) + R_thrust*(thrust[i]**2)) 
         objective.add(objective_i)
     # for i in range(N):
     #     objective_i = gb.QuadExpr(v[i, 0]**2 + v[i, 1]**2 + v[i, 2]**2)
@@ -464,14 +433,6 @@ def solveMICP(plot, x0, v0):
     qVarphi2 = m.addVars(N, vtype=GRB.BINARY, name="qVarphi2")
     qVarphi3 = m.addVars(N, vtype=GRB.BINARY, name="qVarphi3")
     qVarphi4 = m.addVars(N, vtype=GRB.BINARY, name="qVarphi4")
-    # qVarphi5 = m.addVars(N, vtype=GRB.BINARY, name="qVarphi5")
-    # qVarphi6 = m.addVars(N, vtype=GRB.BINARY, name="qVarphi6")
-    # pPhi1 = m.addVars(N, vtype=GRB.BINARY, name="pPhi1")
-    # pPhi2 = m.addVars(N, vtype=GRB.BINARY, name="pPhi2")
-
-
-    # pPhi1_sum = gb.LinExpr()
-    # pPhi2_sum = gb.LinExpr()
 
     for i in range(0, N):
         # Avoid predicates
@@ -479,35 +440,9 @@ def solveMICP(plot, x0, v0):
         m.addConstr(0 <= M*(1 - qVarphi2[i]) - epsilon + (x[i, 0] - obstacle_polygon_x1[1]))
         m.addConstr(0 <= M*(1 - qVarphi3[i]) - epsilon + (obstacle_polygon_x2[0] - x[i, 1]))
         m.addConstr(0 <= M*(1 - qVarphi4[i]) - epsilon + (x[i, 1] - obstacle_polygon_x2[1]))
-        # m.addConstr(0 <= M*(1 - qVarphi5[i]) - epsilon + (obstacle_polygon_x3[0] - x[i, 2]))
-        # m.addConstr(0 <= M*(1 - qVarphi6[i]) - epsilon + (x[i, 2] - obstacle_polygon_x3[1]))
 
         #Avoid disjunctions
-        m.addConstr(1 <= qVarphi1[i] + qVarphi2[i] + qVarphi3[i] + qVarphi4[i]) # + qVarphi5[i] + qVarphi6[i])
-
-        # #Reach predicates
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (x[i, 0] - goal_A_polygon_x1[0]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (- x[i, 0] + goal_A_polygon_x1[1]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (x[i, 1] - goal_A_polygon_x2[0]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (- x[i, 1] + goal_A_polygon_x2[1]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (x[i, 2] - goal_A_polygon_x3[0]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (- x[i, 2] + goal_A_polygon_x3[1]))
-
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (x[i, 0] - goal_B_polygon_x1[0]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (- x[i, 0] + goal_B_polygon_x1[1]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (x[i, 1] - goal_B_polygon_x2[0]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (- x[i, 1] + goal_B_polygon_x2[1]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (x[i, 2] - goal_B_polygon_x3[0]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (- x[i, 2] + goal_B_polygon_x3[1]))
-
-        # #pPhi1_sum
-        # pPhi1_sum.add(pPhi1[i])
-
-        # #pPhi2_sum
-        # pPhi2_sum.add(pPhi2[i])
-    
-    # m.addConstr(1 <= pPhi1_sum)
-    # m.addConstr(1 <= pPhi2_sum)
+        m.addConstr(1 <= qVarphi1[i] + qVarphi2[i] + qVarphi3[i] + qVarphi4[i]) 
 
     for i in range(0, N-surveillance_A_period+1):
         pPhi1_i = m.addVars(surveillance_A_period, vtype=GRB.BINARY, name="pPhi1_{:d}".format(i))
@@ -556,8 +491,6 @@ def solveMICP(plot, x0, v0):
     qVarphi2_sol = []
     qVarphi3_sol = []
     qVarphi4_sol = []
-    # qVarphi5_sol = []
-    # qVarphi6_sol = []
     pPhi1_sol = []
     pPhi2_sol = []
 
@@ -592,10 +525,6 @@ def solveMICP(plot, x0, v0):
             qVarphi3_sol.append(qVarphi3_sol_i.X)
             qVarphi4_sol_i = m.getVarByName("qVarphi4[{:d}]".format(i))
             qVarphi4_sol.append(qVarphi4_sol_i.X)
-            # qVarphi5_sol_i = m.getVarByName("qVarphi5[{:d}]".format(i))
-            # qVarphi5_sol.append(qVarphi5_sol_i.X)
-            # qVarphi6_sol_i = m.getVarByName("qVarphi6[{:d}]".format(i))
-            # qVarphi6_sol.append(qVarphi6_sol_i.X)
             
         for i in range(N-surveillance_A_period+1):
             pPhi1_sol_i = [] 
@@ -650,45 +579,12 @@ def solveNLP(plot, x0, v0, sigma_x0, sigma_v0, uf_milp, ux_milp, uy_milp, qVarph
                     dot(A[4, :], x) + dot(B[4, :], u) + Bd[4, 1]*(sigma_v2.item()*exp((-1/(2*(l_v2.item()**2)))*(sum2((repmat(horzcat(x[0], x[1], x[2]), num_training_samples, 1) - DM(train_inputs.detach().numpy()))**2).T)) @ DM(dMu_v2.detach().numpy())),
                     dot(A[5, :], x) + dot(B[5, :], u) + Bd[5, 2]*(sigma_v3.item()*exp((-1/(2*(l_v3.item()**2)))*(sum2((repmat(horzcat(x[0], x[1], x[2]), num_training_samples, 1) - DM(train_inputs.detach().numpy()))**2).T)) @ DM(dMu_v3.detach().numpy())))
     
-    # x_next = vertcat(dot(A[0, :], x) + dot(B[0, :], u),
-    #                 dot(A[1, :], x) + dot(B[1, :], u),
-    #                 dot(A[2, :], x) + dot(B[2, :], u),
-    #                 dot(A[3, :], x) + dot(B[3, :], u),
-    #                 dot(A[4, :], x) + dot(B[4, :], u),
-    #                 dot(A[5, :], x) + dot(B[5, :], u))
-    
-    # r = x[0] ** 2 + (x[2] - ubx[2]) ** 2
-    #mu_vdx = K_vent/r * x[0] / r 
-    # mu_vdy = 0
-    # mu_vdz = K_vent/r * (x[2] - ubx[2]) / r
-    # x_next = vertcat(dot(A[0, :], x) + dot(B[0, :], u) + Bd[0, 0] * (K_vent / (x[0] ** 2 + (x[2] - ubx[2]) ** 2) * x[0] / (x[0] ** 2 + (x[2] - ubx[2]) ** 2)) + Bd[0, 2] * (K_vent / (x[0] ** 2 + (x[2] - ubx[2]) ** 2) * (x[2] - ubx[2]) / (x[0] ** 2 + (x[2] - ubx[2]) ** 2)),
-    #                 dot(A[1, :], x) + dot(B[1, :], u) + Bd[1, 0] * (K_vent / (x[0] ** 2 + (x[2] - ubx[2]) ** 2) * x[0] / (x[0] ** 2 + (x[2] - ubx[2]) ** 2)) + Bd[1, 2] * (K_vent / (x[0] ** 2 + (x[2] - ubx[2]) ** 2) * (x[2] - ubx[2]) / (x[0] ** 2 + (x[2] - ubx[2]) ** 2)),
-    #                 dot(A[2, :], x) + dot(B[2, :], u) + Bd[2, 0] * (K_vent / (x[0] ** 2 + (x[2] - ubx[2]) ** 2) * x[0] / (x[0] ** 2 + (x[2] - ubx[2]) ** 2)) + Bd[2, 2] * (K_vent / (x[0] ** 2 + (x[2] - ubx[2]) ** 2) * (x[2] - ubx[2]) / (x[0] ** 2 + (x[2] - ubx[2]) ** 2)),
-    #                 dot(A[3, :], x) + dot(B[3, :], u) + Bd[3, 0] * (K_vent / (x[0] ** 2 + (x[2] - ubx[2]) ** 2) * x[0] / (x[0] ** 2 + (x[2] - ubx[2]) ** 2)) + Bd[3, 2] * (K_vent / (x[0] ** 2 + (x[2] - ubx[2]) ** 2) * (x[2] - ubx[2]) / (x[0] ** 2 + (x[2] - ubx[2]) ** 2)),
-    #                 dot(A[4, :], x) + dot(B[4, :], u) + Bd[4, 0] * (K_vent / (x[0] ** 2 + (x[2] - ubx[2]) ** 2) * x[0] / (x[0] ** 2 + (x[2] - ubx[2]) ** 2)) + Bd[4, 2] * (K_vent / (x[0] ** 2 + (x[2] - ubx[2]) ** 2) * (x[2] - ubx[2]) / (x[0] ** 2 + (x[2] - ubx[2]) ** 2)),
-    #                 dot(A[5, :], x) + dot(B[5, :], u) + Bd[5, 0] * (K_vent / (x[0] ** 2 + (x[2] - ubx[2]) ** 2) * x[0] / (x[0] ** 2 + (x[2] - ubx[2]) ** 2)) + Bd[5, 2] * (K_vent / (x[0] ** 2 + (x[2] - ubx[2]) ** 2) * (x[2] - ubx[2]) / (x[0] ** 2 + (x[2] - ubx[2]) ** 2)))
-
     sigma_next = vertcat(dot(A[0, :], sigma) + Bd[0, 0]*(sigma_v1.item() - (sigma_v1.item()*exp((-1/(2*(l_v1.item()**2)))*(sum2((repmat(horzcat(x[0], x[1], x[2]), num_training_samples, 1) - DM(train_inputs.detach().numpy()))**2).T))) @ DM(dSigma_v1.detach().numpy()) @ (sigma_v1.item()*exp((-1/(2*(l_v1.item()**2)))*(sum2((repmat(horzcat(x[0], x[1], x[2]), num_training_samples, 1) - DM(train_inputs.detach().numpy()))**2).T))).T),
                          dot(A[1, :], sigma) + Bd[1, 1]*(sigma_v2.item() - (sigma_v2.item()*exp((-1/(2*(l_v2.item()**2)))*(sum2((repmat(horzcat(x[0], x[1], x[2]), num_training_samples, 1) - DM(train_inputs.detach().numpy()))**2).T))) @ DM(dSigma_v2.detach().numpy()) @ (sigma_v2.item()*exp((-1/(2*(l_v2.item()**2)))*(sum2((repmat(horzcat(x[0], x[1], x[2]), num_training_samples, 1) - DM(train_inputs.detach().numpy()))**2).T))).T),
                          dot(A[2, :], sigma) + Bd[2, 2]*(sigma_v3.item() - (sigma_v3.item()*exp((-1/(2*(l_v3.item()**2)))*(sum2((repmat(horzcat(x[0], x[1], x[2]), num_training_samples, 1) - DM(train_inputs.detach().numpy()))**2).T))) @ DM(dSigma_v3.detach().numpy()) @ (sigma_v3.item()*exp((-1/(2*(l_v3.item()**2)))*(sum2((repmat(horzcat(x[0], x[1], x[2]), num_training_samples, 1) - DM(train_inputs.detach().numpy()))**2).T))).T),
                          dot(A[3, :], sigma) + Bd[3, 0]*(sigma_v1.item() - (sigma_v1.item()*exp((-1/(2*(l_v1.item()**2)))*(sum2((repmat(horzcat(x[0], x[1], x[2]), num_training_samples, 1) - DM(train_inputs.detach().numpy()))**2).T))) @ DM(dSigma_v1.detach().numpy()) @ (sigma_v1.item()*exp((-1/(2*(l_v1.item()**2)))*(sum2((repmat(horzcat(x[0], x[1], x[2]), num_training_samples, 1) - DM(train_inputs.detach().numpy()))**2).T))).T),
                          dot(A[4, :], sigma) + Bd[4, 1]*(sigma_v2.item() - (sigma_v2.item()*exp((-1/(2*(l_v2.item()**2)))*(sum2((repmat(horzcat(x[0], x[1], x[2]), num_training_samples, 1) - DM(train_inputs.detach().numpy()))**2).T))) @ DM(dSigma_v2.detach().numpy()) @ (sigma_v2.item()*exp((-1/(2*(l_v2.item()**2)))*(sum2((repmat(horzcat(x[0], x[1], x[2]), num_training_samples, 1) - DM(train_inputs.detach().numpy()))**2).T))).T),
                          dot(A[5, :], sigma) + Bd[5, 2]*(sigma_v3.item() - (sigma_v3.item()*exp((-1/(2*(l_v3.item()**2)))*(sum2((repmat(horzcat(x[0], x[1], x[2]), num_training_samples, 1) - DM(train_inputs.detach().numpy()))**2).T))) @ DM(dSigma_v3.detach().numpy()) @ (sigma_v3.item()*exp((-1/(2*(l_v3.item()**2)))*(sum2((repmat(horzcat(x[0], x[1], x[2]), num_training_samples, 1) - DM(train_inputs.detach().numpy()))**2).T))).T))
-    
-    # sigma_next = vertcat(dot(A[0, :], sigma),
-    #                      dot(A[1, :], sigma),
-    #                      dot(A[2, :], sigma),
-    #                      dot(A[3, :], sigma),
-    #                      dot(A[4, :], sigma),
-    #                      dot(A[5, :], sigma))
-    
-    # var_vents = np.array([var_vent, var_vent, var_vent])
-    # sigma_next = vertcat(dot(A[0, :], sigma) + np.dot(Bd[0, :], var_vents),
-    #                      dot(A[1, :], sigma) + np.dot(Bd[1, :], var_vents),
-    #                      dot(A[2, :], sigma) + np.dot(Bd[2, :], var_vents),
-    #                      dot(A[3, :], sigma) + np.dot(Bd[3, :], var_vents),
-    #                      dot(A[4, :], sigma) + np.dot(Bd[4, :], var_vents),
-    #                      dot(A[5, :], sigma) + np.dot(Bd[5, :], var_vents))
 
     # Objective term
     # L = x[3] ** 2 + x[4] ** 2 + x[5] ** 2
@@ -727,11 +623,6 @@ def solveNLP(plot, x0, v0, sigma_x0, sigma_v0, uf_milp, ux_milp, uy_milp, qVarph
         stddev_start += [stddevk]
 
     # Start with an empty NLP
-    # w=[]
-    # w0 = []
-    # lbw = []
-    # ubw = []
-
     opt_vars = []
     opt_vars0 = []
     lbopt_vars = []
@@ -874,16 +765,6 @@ def solveNLP(plot, x0, v0, sigma_x0, sigma_v0, uf_milp, ux_milp, uy_milp, qVarph
         lbg += [0]
         ubg += [2*M]
 
-    # for i in range(local_N + 1):
-    #     g += [M*(1 - qVarphi5_milp[i]) - epsilon + invCDFVarphiEpsilon * opt_vars[1 + 3*i][2] + (- opt_vars[0 + 3*i][2] + obstacle_polygon_x3[0])]
-    #     lbg += [0]
-    #     ubg += [2*M]
-
-    # for i in range(local_N + 1):
-    #     g += [M*(1 - qVarphi6_milp[i]) - epsilon + invCDFVarphiEpsilon * opt_vars[1 + 3*i][2] + (opt_vars[0 + 3*i][2] - obstacle_polygon_x3[1])]
-    #     lbg += [0]
-    #     ubg += [2*M]
-
     for i in range(local_N + 2 - surveillance_A_period):
         for j in range(surveillance_A_period):
             if (i + j >= len(x0)):
@@ -934,13 +815,6 @@ def solveNLP(plot, x0, v0, sigma_x0, sigma_v0, uf_milp, ux_milp, uy_milp, qVarph
     opt_vars1_opt = sol['x']
     lam_w_opt = sol['lam_x']
     lam_g_opt = sol['lam_g']
-
-    # u0_opt = w1_opt[0:6*(N-1)+4][4::6]
-    # u1_opt = w1_opt[0:6*(N-1)+4][5::6]
-    # xGuess, sigmaGuess = makeTrajectoryGP(u0_opt, u1_opt)
-
-    # print("Optimal result")
-    # print(w1_opt)
 
     uTheta_opt = []
     uPhi_opt = []
@@ -1003,50 +877,16 @@ def verifySTLSAT(x, v):
     qVarphi2 = m_sat.addVars(N, vtype=GRB.BINARY, name="qVarphi2")
     qVarphi3 = m_sat.addVars(N, vtype=GRB.BINARY, name="qVarphi3")
     qVarphi4 = m_sat.addVars(N, vtype=GRB.BINARY, name="qVarphi4")
-    # qVarphi5 = m.addVars(N, vtype=GRB.BINARY, name="qVarphi5")
-    # qVarphi6 = m.addVars(N, vtype=GRB.BINARY, name="qVarphi6")
-    # pPhi1 = m.addVars(N, vtype=GRB.BINARY, name="pPhi1")
-    # pPhi2 = m.addVars(N, vtype=GRB.BINARY, name="pPhi2")
-
-
-    # pPhi1_sum = gb.LinExpr()
-    # pPhi2_sum = gb.LinExpr()
-
+    
     for i in range(0, N):
         # Avoid predicates
         m_sat.addConstr(0 <= M*(1 - qVarphi1[i]) - epsilon + (obstacle_polygon_x1[0] - x[i, 0]))
         m_sat.addConstr(0 <= M*(1 - qVarphi2[i]) - epsilon + (x[i, 0] - obstacle_polygon_x1[1]))
         m_sat.addConstr(0 <= M*(1 - qVarphi3[i]) - epsilon + (obstacle_polygon_x2[0] - x[i, 1]))
         m_sat.addConstr(0 <= M*(1 - qVarphi4[i]) - epsilon + (x[i, 1] - obstacle_polygon_x2[1]))
-        # m.addConstr(0 <= M*(1 - qVarphi5[i]) - epsilon + (obstacle_polygon_x3[0] - x[i, 2]))
-        # m.addConstr(0 <= M*(1 - qVarphi6[i]) - epsilon + (x[i, 2] - obstacle_polygon_x3[1]))
 
         #Avoid disjunctions
         m_sat.addConstr(1 <= qVarphi1[i] + qVarphi2[i] + qVarphi3[i] + qVarphi4[i]) # + qVarphi5[i] + qVarphi6[i])
-
-        # #Reach predicates
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (x[i, 0] - goal_A_polygon_x1[0]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (- x[i, 0] + goal_A_polygon_x1[1]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (x[i, 1] - goal_A_polygon_x2[0]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (- x[i, 1] + goal_A_polygon_x2[1]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (x[i, 2] - goal_A_polygon_x3[0]))
-        # m.addConstr(0 <= M*(1 - pPhi1[i]) - epsilon + (- x[i, 2] + goal_A_polygon_x3[1]))
-
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (x[i, 0] - goal_B_polygon_x1[0]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (- x[i, 0] + goal_B_polygon_x1[1]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (x[i, 1] - goal_B_polygon_x2[0]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (- x[i, 1] + goal_B_polygon_x2[1]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (x[i, 2] - goal_B_polygon_x3[0]))
-        # m.addConstr(0 <= M*(1 - pPhi2[i]) - epsilon + (- x[i, 2] + goal_B_polygon_x3[1]))
-
-        # #pPhi1_sum
-        # pPhi1_sum.add(pPhi1[i])
-
-        # #pPhi2_sum
-        # pPhi2_sum.add(pPhi2[i])
-    
-    # m.addConstr(1 <= pPhi1_sum)
-    # m.addConstr(1 <= pPhi2_sum)
 
     for i in range(0, N-surveillance_A_period+1):
         pPhi1_i = m_sat.addVars(surveillance_A_period, vtype=GRB.BINARY, name="pPhi1_{:d}".format(i))
@@ -1086,8 +926,6 @@ def verifySTLSAT(x, v):
     qVarphi2_sol = []
     qVarphi3_sol = []
     qVarphi4_sol = []
-    # qVarphi5_sol = []
-    # qVarphi6_sol = []
     pPhi1_sol = []
     pPhi2_sol = []
 
@@ -1110,10 +948,6 @@ def verifySTLSAT(x, v):
             qVarphi3_sol.append(qVarphi3_sol_i.X)
             qVarphi4_sol_i = m_sat.getVarByName("qVarphi4[{:d}]".format(i))
             qVarphi4_sol.append(qVarphi4_sol_i.X)
-            # qVarphi5_sol_i = m.getVarByName("qVarphi5[{:d}]".format(i))
-            # qVarphi5_sol.append(qVarphi5_sol_i.X)
-            # qVarphi6_sol_i = m.getVarByName("qVarphi6[{:d}]".format(i))
-            # qVarphi6_sol.append(qVarphi6_sol_i.X)
             
         for i in range(N-surveillance_A_period+1):
             pPhi1_sol_i = [] 
@@ -1186,11 +1020,6 @@ def runControlLoop(plot, x0, v0):
     
     return satSTL, isFeasible, avg_runtime 
 
-# x0 = np.array([[5., 2., 1.]])
-# v0 = np.array([[0., 0., 0.]])
-
-# runControlLoop(True, x0, v0)
-
 singleTest = True
 numTestIts = 100
 
@@ -1198,8 +1027,6 @@ if singleTest == True:
     numTestIts = 1
 
 currIt = 0
-# sigmax1Guess = np.zeros(N)
-# sigmax2Guess = np.zeros(N)
 
 feas_x0List = []
 infeas_x0List = []
